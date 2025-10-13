@@ -1,0 +1,37 @@
+#!/bin/sh
+
+MOD_PATH="/lib/modules/$(uname -r)/extra/"
+
+case "$1" in
+    start)
+	    echo "Load scull modules"
+		# scull
+		insmod "$MOD_PATH"scull.ko || exit 1
+
+        # retrieve major number
+        major=$(awk "\$2==\"scull\" {print \$1}" /proc/devices)
+
+        # Remove stale nodes and replace them, then give gid and perms
+        # Usually the script is shorter, it's scull that has several devices in it.
+
+        rm -f /dev/scull[0-3]
+        mknod /dev/scull0 c $major 0
+        mknod /dev/scull1 c $major 1
+        mknod /dev/scull2 c $major 2
+        mknod /dev/scull3 c $major 3
+        ln -sf scull0 /dev/scull
+
+		;;
+	stop)
+	    echo "Unload scull modules"
+		# invoke rmmod with all arguments we got
+        rmmod scull || exit 1
+		rm -f /dev/scull /dev/scull[0-3]
+
+		;;
+	*)
+	    echo "Usage: $0 {start|stop}"
+	exit 1
+esac
+
+exit 0
